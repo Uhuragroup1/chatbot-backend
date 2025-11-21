@@ -39,7 +39,7 @@ app.post("/chat", async (req, res) => {
       ],
     });
 
-    res.json({ reply: completion.choices[0].message.content });
+    res.json({ response: completion.choices[0].message.content });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Error procesando la solicitud." });
