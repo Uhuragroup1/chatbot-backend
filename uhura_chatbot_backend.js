@@ -9,39 +9,37 @@ app.use(express.json());
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const SYSTEM_PROMPT = `Eres Ani, asesora experta de Uhura Group. 
-TU NEGOCIO: Somos Performance Experts. Ayudamos a empresas con IA, Transformación Digital y Marketing de Resultados. 
-REGLA DE ORO: No saludes si ya hay mensajes previos. Sé breve (máximo 2 párrafos) y muy humana. 
-CITA: Si el cliente quiere avanzar, envía este link: https://meetings.hubspot.com/catalina-tejada`;
+const SYSTEM_PROMPT = `
+Eres Ani, consultora de Uhura Group (Performance Experts). 
+Tu objetivo es vender nuestros servicios: Performance Marketing, Lead Experience, eCommerce y Consultoría de Resultados.
+REGLAS:
+- No menciones la "IA" a menos que te pregunten específicamente. 
+- Enfócate en crecimiento y rentabilidad.
+- Sé breve y humana. Si quieren cotizar, diles que agenden con Luisa: https://meetings.hubspot.com/catalina-tejada
+- NO saludes si ya hay mensajes previos en el historial.
+`;
 
 app.post("/chat", async (req, res) => {
   try {
-    // 1. Recibimos los mensajes y los limpiamos de cualquier formato extraño de la web
-    let rawMessages = Array.isArray(req.body.messages) ? req.body.messages : [];
+    const messages = Array.isArray(req.body.messages) ? req.body.messages : [];
     
-    // 2. Forzamos el formato correcto que OpenAI exige
-    const cleanMessages = rawMessages
-      .map(m => ({
-        role: m.role === "assistant" ? "assistant" : "user", 
-        content: String(m.content || m.message || m.text || "")
-      }))
-      .filter(m => m.content.trim() !== "");
-
-    // 3. Llamada a la IA
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Es más rápido y evita errores de conexión
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...cleanMessages],
+      model: "gpt-4o-mini",
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
       temperature: 0.3,
     });
 
-    res.json({ reply: completion.choices[0].message.content });
+    const textoRespuesta = completion.choices[0].message.content;
+
+    // Enviamos la respuesta con dos nombres para evitar el "undefined"
+    res.json({ 
+      reply: textoRespuesta, 
+      response: textoRespuesta 
+    });
 
   } catch (error) {
-    console.error("ERROR REAL:", error);
-    // Esto te dirá en el chat exacto qué falló (luego lo quitamos)
-    res.status(500).json({ 
-      reply: `Hubo un error: ${error.message}. Revisa que tu API KEY tenga saldo y el modelo sea correcto.` 
-    });
+    console.error("Error:", error);
+    res.status(500).json({ reply: "Error de conexión", response: "Error de conexión" });
   }
 });
 
